@@ -1,0 +1,297 @@
+MainActivity.java
+
+package com.example.myapplication;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.Button;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+    private EditText e1,e2;
+    private Button log_button,reg_button;
+    private SQLiteHelper helper;
+    private String user_name,password,temp_pass;
+    private SQLiteDatabase database;
+
+    @SuppressLint("MissingInflatedId")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        e1=findViewById(R.id.editTextTextPersonName);
+        e2=findViewById(R.id.editTextTextPassword);
+        log_button=findViewById(R.id.button);
+        reg_button=findViewById(R.id.button2);
+
+        helper=new SQLiteHelper(getBaseContext(),"userdb",null,1);
+        helper.queryData("create table if not exists users(name varchar,pass varchar)");
+
+        log_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                user_name=e1.getText().toString();
+                password=e2.getText().toString();
+                try {
+                    helper=new SQLiteHelper(getBaseContext(),"userdb",null,1);
+                    final String path=getApplicationContext().getDatabasePath("userdb").getPath();
+                    database=SQLiteDatabase.openOrCreateDatabase(path,null);
+                    Cursor cursor=database.rawQuery("select pass from users where name= '"+user_name+"'",null);
+                    while(cursor.moveToNext()){
+                        temp_pass=cursor.getString(0);
+                    }
+                    if (temp_pass.equals(password)){
+                        Toast.makeText(MainActivity.this,"Loggin in ",Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this,"Incorrect Crediantials",Toast.LENGTH_SHORT).show();
+                    }
+                }
+                catch (Exception e){
+                    System.out.println(e.toString());
+                }
+
+            }
+        });
+
+
+        reg_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(MainActivity.this,Registeration.class);
+                startActivity(intent);
+
+            }
+        });
+
+    }
+}
+
+
+MainActivity.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/editTextTextPersonName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="Enter username"
+        android:inputType="textPersonName"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/editTextTextPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="37dp"
+        android:layout_marginEnd="1dp"
+        android:ems="10"
+        android:hint="Enter Password"
+        android:inputType="textPassword"
+        app:layout_constraintEnd_toEndOf="@+id/editTextTextPersonName"
+        app:layout_constraintTop_toBottomOf="@+id/editTextTextPersonName" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginBottom="15dp"
+        android:text="Login"
+        app:layout_constraintBottom_toTopOf="@+id/button2"
+        app:layout_constraintStart_toStartOf="@+id/button2" />
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="102dp"
+        android:text="Register"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+SQLiteHelper.java
+
+
+package com.example.myapplication;
+
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteStatement;
+
+import androidx.annotation.Nullable;
+
+public class SQLiteHelper extends SQLiteOpenHelper {
+    public SQLiteHelper(@Nullable Context context, @Nullable String name, @Nullable SQLiteDatabase.CursorFactory factory, int version) {
+        super(context, name, factory, version);
+    }
+    public void insertData(String name,String pass){
+        SQLiteDatabase database=this.getWritableDatabase();
+        String sql="insert into users values(?,?)";
+        SQLiteStatement statement=database.compileStatement(sql);
+        statement.clearBindings();
+        statement.bindString(1,name);
+        statement.bindString(2,pass);
+        statement.executeInsert();
+        statement.close();
+        database.close();
+    }
+    public void queryData(String sql){
+        SQLiteDatabase database=getWritableDatabase();
+        database.execSQL(sql);
+    }
+    @Override
+    public void onCreate(SQLiteDatabase sqLiteDatabase) {
+
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+
+    }
+}
+
+
+
+Registeration.java
+
+package com.example.myapplication;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class Registeration extends AppCompatActivity {
+    private EditText e1,e2;
+    private Button submit_button,back;
+    private String user_name,pass;
+    private static SQLiteHelper helper;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_registeration);
+
+        e1 = findViewById(R.id.PersonName2);
+        e2 = findViewById(R.id.editTextTextPassword2);
+        submit_button=findViewById(R.id.button3);
+        back=findViewById(R.id.button4);
+        helper=new SQLiteHelper(getBaseContext(),"userdb",null,1);
+
+
+        submit_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                user_name=e1.getText().toString();
+                pass=e2.getText().toString();
+                helper.insertData(user_name,pass);
+                Toast.makeText(Registeration.this,"Success",Toast.LENGTH_SHORT).show();
+            }
+        });
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(Registeration.this,MainActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+    }
+}
+
+Registeration.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Registeration">
+
+    <EditText
+        android:id="@+id/PersonName2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="201dp"
+        android:ems="10"
+        android:hint="Enter Your Username"
+        android:inputType="textPersonName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/editTextTextPassword2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="Enter Your password"
+        android:inputType="textPassword"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/PersonName2"
+        app:layout_constraintVertical_bias="0.129" />
+
+    <Button
+        android:id="@+id/button3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="92dp"
+        android:text="Submit"
+        app:layout_constraintStart_toStartOf="@+id/editTextTextPassword2"
+        app:layout_constraintTop_toBottomOf="@+id/editTextTextPassword2" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginBottom="59dp"
+        android:text="Register"
+        android:textSize="30dp"
+        app:layout_constraintBottom_toTopOf="@+id/PersonName2"
+        app:layout_constraintStart_toStartOf="@+id/PersonName2" />
+
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="2dp"
+        android:text="Button"
+        app:layout_constraintEnd_toEndOf="@+id/button3"
+        app:layout_constraintTop_toBottomOf="@+id/button3" />
+</androidx.constraintlayout.widget.ConstraintLayout>
